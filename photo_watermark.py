@@ -36,7 +36,12 @@ def add_watermark(img_path, out_path, text, font_size, color, position):
         font = ImageFont.truetype("arial.ttf", font_size)
     except:
         font = ImageFont.load_default()
-    text_size = draw.textsize(text, font=font)
+    # 兼容 Pillow 新旧版本
+    try:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_size = (bbox[2] - bbox[0], bbox[3] - bbox[1])
+    except AttributeError:
+        text_size = draw.textsize(text, font=font)
     pos = calc_position(image.size, text_size, position)
     draw.text(pos, text, font=font, fill=color+(128,))
     watermarked = Image.alpha_composite(image, txt_layer).convert('RGB')
@@ -77,17 +82,30 @@ def parse_color(color_str):
     return COLORS.get(color_str.lower(), (255,255,255))
 
 def main():
-    parser = argparse.ArgumentParser(description='批量图片EXIF水印工具')
-    parser.add_argument('--path', required=True, help='图片文件或目录路径')
-    parser.add_argument('--font-size', type=int, default=30, help='字体大小')
-    parser.add_argument('--color', type=str, default='#FFFFFF', help='字体颜色（如#FF0000或red）')
-    parser.add_argument('--position', type=str, default='bottom-right', choices=POSITION_MAP.keys(), help='水印位置')
-    args = parser.parse_args()
-    color = parse_color(args.color)
-    if not os.path.exists(args.path):
-        print('路径不存在')
-        sys.exit(1)
-    process_images(args.path, args.font_size, color, args.position)
+    print('批量图片EXIF水印工具')
+    path = input('请输入图片文件或目录路径: ').strip()
+    while not os.path.exists(path):
+        print('路径不存在，请重新输入。')
+        path = input('请输入图片文件或目录路径: ').strip()
+
+    while True:
+        try:
+            font_size = int(input('请输入字体大小（如30）: ').strip())
+            if font_size > 0:
+                break
+        except Exception:
+            pass
+
+    color_str = input('请输入字体颜色（如#FF0000或red）: ').strip()
+    color = parse_color(color_str)
+
+    print('可选位置: ' + ', '.join(POSITION_MAP.keys()))
+    while True:
+        position = input('请输入水印位置: ').strip()
+        if position in POSITION_MAP:
+            break
+
+    process_images(path, font_size, color, position)
 
 if __name__ == '__main__':
     main()
