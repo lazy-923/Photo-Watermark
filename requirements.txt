@@ -1,2 +1,4 @@
-Pillow
-piexif
+Pillow>=9.0.0
+piexif>=1.1.3
+# 如需自定义字体可安装：
+# pip install pillow[font]
